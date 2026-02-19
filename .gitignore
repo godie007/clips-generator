@@ -1,0 +1,42 @@
+# Environment and secrets
+.env
+.env.local
+*.env.backup
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Outputs (imágenes generadas)
+genImages/outputs/
+outputs/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ComfyUI (instalación local, no versionar)
+ComfyUI/
+
+# Logs y temporales
+*.log
+*.tmp
+*.temp
+webhook_response.json
+webhook_result.json
+test_webhook_body.json
+
+# Archivos empaquetados
+*.zip
