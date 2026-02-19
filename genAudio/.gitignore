@@ -1,0 +1,5 @@
+# Entorno y salidas (el raíz ya ignora .venv/ y outputs/)
+.venv/
+outputs/
+.env
+*.egg-info/

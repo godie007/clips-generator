@@ -16,8 +16,9 @@ venv/
 dist/
 build/
 
-# Outputs (imágenes generadas)
+# Outputs (imágenes y audio generados)
 genImages/outputs/
+genAudio/outputs/
 outputs/
 
 # IDE / OS

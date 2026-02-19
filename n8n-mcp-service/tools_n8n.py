@@ -56,6 +56,22 @@ class CreateImageWorkflowInput(BaseModel):
     )
 
 
+class TriggerAudioWorkflowInput(BaseModel):
+    """Input para disparar el workflow de n8n que genera audio (TTS) vía webhook."""
+    webhook_path: str = Field(
+        default="generate-audio",
+        description="Path del webhook, ej: 'generate-audio'",
+        min_length=1,
+    )
+    text: str = Field(
+        ...,
+        description="Texto a sintetizar en voz (TTS)",
+        min_length=1,
+        max_length=5000,
+    )
+    use_full_url: bool = Field(default=False, description="Si True, webhook_path es URL completa")
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _headers() -> dict[str, str]:
@@ -143,6 +159,44 @@ def register_n8n_tools(mcp: FastMCP) -> None:
             "success": success,
             "status_code": response.status_code,
             "validation": validation,
+            "response": response_data,
+            "webhook_url": url,
+        }
+        return json.dumps(result, indent=2, ensure_ascii=False)
+
+    @mcp.tool(
+        name="n8n_trigger_audio_workflow",
+        annotations={"title": "Generar audio (TTS) vía n8n", "readOnlyHint": False},
+    )
+    async def n8n_trigger_audio_workflow(params: TriggerAudioWorkflowInput) -> str:
+        """
+        Dispara el workflow de n8n que genera audio desde texto (Chatterbox TTS).
+        Webhook por defecto: generate-audio. Body: { "text": "..." }.
+        La respuesta incluye success, filename, base64_audio (WAV en base64).
+        """
+        url = _webhook_url(params.webhook_path, params.use_full_url)
+        body: dict[str, Any] = {"text": params.text[:5000]}
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(url, json=body, headers=_headers())
+        except httpx.ConnectError as e:
+            return _json_error(f"No se pudo conectar a n8n: {e}")
+        except httpx.TimeoutException as e:
+            return _json_error(f"Timeout al llamar al webhook: {e}")
+        except Exception as e:
+            logger.exception("Error llamando webhook audio n8n")
+            return _json_error(f"Error: {type(e).__name__}: {e}")
+
+        try:
+            response_data = response.json() if response.content else {}
+        except Exception:
+            response_data = {"raw_text": (response.text or "")[:500]}
+
+        success = response.status_code >= 200 and response.status_code < 300 and isinstance(response_data, dict) and response_data.get("success") is True
+        result = {
+            "success": success,
+            "status_code": response.status_code,
             "response": response_data,
             "webhook_url": url,
         }
